@@ -58,3 +58,6 @@ body{
 	background-color: black;
 	overflow: hidden;
 }
+.image{
+	display: none;
+}

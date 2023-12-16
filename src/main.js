@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 let scene,
 camera,
 renderer,
@@ -21,10 +23,10 @@ function init() {
   camera.rotation.y = -0.12;
   camera.rotation.z = 0.27;
 
-  ambient =new THREE.AmbientLight(0x555555);
+  const ambient =new THREE.AmbientLight(0x555555);
   scene.add(ambient);
 
-  directionalLight = new THREE.DirectionalLight(0xffeedd);
+  const directionalLight = new THREE.DirectionalLight(0xffeedd);
   directionalLight.position.set(0,0,1);
   scene.add(directionalLight);
 
@@ -44,7 +46,7 @@ function init() {
   let sizes = [];
   rainGeo = new THREE.BufferGeometry();
   for(let i = 0; i < rainCount; i++){
-    rainDrop = new THREE.Vector3(
+    const rainDrop = new THREE.Vector3(
       Math.random() * 400 - 200,
       Math.random() * 500 - 250,
       Math.random() * 400 - 200,
@@ -62,7 +64,7 @@ function init() {
     "size",
     new THREE.BufferAttribute(new Float32Array(sizes), 1)
   )
-  rainMaterial = new THREE.PointsMaterial({
+  const rainMaterial = new THREE.PointsMaterial({
     color: 0xaaaaaa,
     size: 0.1,
     transparent: true
@@ -72,11 +74,13 @@ function init() {
   scene.add(rain)
   
   let loader = new THREE.TextureLoader();
-  load = loader.load(
-    'public/assets/bg.webp',
+  const image = document.querySelector('.image img')
+  const load = loader.load(
+    image.src,
+    
     function(texture) {
-      cloudGeo = new THREE.PlaneBufferGeometry(500,500);
-      cloudMaterial = new THREE.MeshLambertMaterial({
+      const cloudGeo = new THREE.PlaneBufferGeometry(500,500);
+      const cloudMaterial = new THREE.MeshLambertMaterial({
         map: texture,
         transparent: true
       });
@@ -118,7 +122,6 @@ function animate(){
     if( rain.position.z <- 200){
       rain.position.z = 0;
     }
-    
     if(Math.random() > 0.95 || flash.power > 100){
       if(flash.power > 100)
       flash.position.set(Math.random() *400, 300, Math.random() * 200, 100)
