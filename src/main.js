@@ -1,215 +1,136 @@
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-window.addEventListener('load', function () {
-  init()
-})
+let scene,
+camera,
+renderer,
+cloudParticles = [],
+rainParticles = [],
+flash,
+rain,
+rainGeo,
+rainCount = 15000;
 
-async function init() {
-  const renderer = new THREE.WebGLRenderer({
-      antialias:true,
-  });
-  
-  /** outputencdoing */
-  renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.shadowMap.enabled = true;
-
-  renderer.setSize(window.innerWidth,window.innerHeight)
-
-  document.body.appendChild(renderer.domElement);
-
-  const scene = new THREE.Scene();
-
-  const camera = new THREE.PerspectiveCamera(
-    75,
+function init() {
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(
+    60,
     window.innerWidth / window.innerHeight,
     1,
-    500
+    1000
   )
+  camera.position.z = 1;
+  camera.rotation.x = 1.16;
+  camera.rotation.y = -0.12;
+  camera.rotation.z = 0.27;
 
-  camera.position.set(0, 5, 20)
+  ambient =new THREE.AmbientLight(0x555555);
+  scene.add(ambient);
 
-  /** LodingManager */
-  const loadingmanager = new THREE.LoadingManager();
+  directionalLight = new THREE.DirectionalLight(0xffeedd);
+  directionalLight.position.set(0,0,1);
+  scene.add(directionalLight);
 
-  const progressBar = document.querySelector('#progress-bar') 
-  const progressBarContainer = document.querySelector('#progress-bar-container') 
+  flash = new THREE.PointLight(0x062d89,30,500,1.7);
+  flash.position.set(200,300,100);
+  scene.add(flash);
 
-  loadingmanager.onProgress = (url, loaded, total) => {
-    progressBar.value = (loaded / total) * 100
+  renderer = new THREE.WebGLRenderer();
+
+  scene.fog = new THREE.FogExp2(0x11111f, 0.002);
+  renderer.setClearColor(scene.fog.color);
+
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
+
+  let positions = [];
+  let sizes = [];
+  rainGeo = new THREE.BufferGeometry();
+  for(let i = 0; i < rainCount; i++){
+    rainDrop = new THREE.Vector3(
+      Math.random() * 400 - 200,
+      Math.random() * 500 - 250,
+      Math.random() * 400 - 200,
+    )
+    positions.push(Math.random() * 400 - 200);
+    positions.push(Math.random() * 500 - 250);
+    positions.push(Math.random() * 400 - 200);
+    sizes.push(30);
   }
-
-  loadingmanager.onLoad = () => {
-    progressBarContainer.style.display = 'none'  
-  }
-
-  const gltfLoader = new GLTFLoader(loadingmanager);
- 
-
-
-  /** charater */
-  const gltf = await gltfLoader.loadAsync('models/charater.gltf')
-
-  const model = gltf.scene;
-
-  model.scale.set( .1, .1, .1)
-  model.traverse( object => {
-    if(object.isMesh){
-      object.castShadow = true
-    }
+  rainGeo.setAttribute(
+    "position",
+    new THREE.BufferAttribute(new Float32Array(positions), 3)
+  )
+  rainGeo.setAttribute(
+    "size",
+    new THREE.BufferAttribute(new Float32Array(sizes), 1)
+  )
+  rainMaterial = new THREE.PointsMaterial({
+    color: 0xaaaaaa,
+    size: 0.1,
+    transparent: true
   })
-
-  scene.add(model)
-  camera.lookAt(model.position)
-
-
-  /** Plan */
-  const planGeometry = new THREE.PlaneGeometry(10000, 10000, 10000);
-  const planMaterial = new THREE.MeshPhongMaterial({
-    color : 0x000000
-  })
-
-  const planMash = new THREE.Mesh(planGeometry, planMaterial)
-
-  planMash.rotation.x = -Math.PI / 2;
-  planMash.position.y = -7.5
-  planMash.receiveShadow = true
-  scene.add(planMash)
-
-  /** spotLight */
-  const  spotLight = new THREE.SpotLight(0xffffff, 1.5, 30, Math.PI * 0.15, 0.5, 0.5)
   
-  spotLight.position.set(0, 20, 0)
-  spotLight.castShadow =true
-  spotLight.shadow.mapSize.width = 1024
-  spotLight.shadow.mapSize.Height = 1024
+  rain = new THREE.Points(rainGeo, rainMaterial)
+  scene.add(rain)
   
-  scene.add(spotLight)
+  let loader = new THREE.TextureLoader();
+  load = loader.load(
+    'public/assets/bg.webp',
+    function(texture) {
+      cloudGeo = new THREE.PlaneBufferGeometry(500,500);
+      cloudMaterial = new THREE.MeshLambertMaterial({
+        map: texture,
+        transparent: true
+      });
+      for(let p = 0; p < 40; p++){
+        let cloud = new THREE.Mesh(
+          cloudGeo,
+          cloudMaterial
+        )
+        cloud.position.set(
+          Math.random() * 800 - 400,
+          400,
+          Math.random() * 800 - 450,
+        )
 
-
-  /** hemisphereLight */
-  const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x333333)
-
-  hemisphereLight.position.set(0, 20, 10)
-
-  scene.add(hemisphereLight);
-
-
-  /** animation */
-  const mixer = new THREE.AnimationMixer(model)
-  
-  const buttons = document.querySelector('.actions')
-
-  let currentAction;
-
-  const combatAniumations = gltf.animations.slice(0, 5)
-  const dancingAniumations = gltf.animations.slice(5)
-
-  combatAniumations.forEach(animation =>{
-    const button = document.createElement('button');
-
-    button.innerText = animation.name;
-    buttons.appendChild(button)
-    button.addEventListener('click',()=>{
-      const previousAction = currentAction;
-      currentAction = mixer.clipAction(animation)
-      
-      if(previousAction !== currentAction){
-        previousAction.fadeOut(0.5)
-        currentAction.reset().fadeIn(0.5).play()
+        cloud.rotation.x = 1.18;
+        cloud.rotation.y = -0.12;
+        cloud.rotation.z = Math.random() * 360;
+        cloud.material.opacity = 0.2;
+        cloudParticles.push(cloud);
+        scene.add(cloud);
       }
+      animate();
+      window.addEventListener("resize",onWindowResize);
+      
+    }
+  )
+}
+init();
+
+function animate(){
+    cloudParticles.forEach((p) => {
+      p.rotation.z -= 0.002;
     })
 
-  })
+    // const time = Date.new() * 0.05;
+    rainGeo.verticesNeedUpdate = true;
+    rain.position.z -= 0.222;
 
-  const hasAnimation = gltf.animations.length !== 0;
-
-  if(hasAnimation){
-    currentAction = mixer.clipAction(gltf.animations[0])
+    if( rain.position.z <- 200){
+      rain.position.z = 0;
+    }
     
-    currentAction.play()
-  }
-  /** Control */
-  const controls = new OrbitControls(camera, renderer.domElement)
-  controls.enableDamping = true
-  controls.minDistance = 15
-  controls.maxDistance = 25
-  controls.minPolarAngle = Math.PI / 4
-  controls.maxPolarAngle = Math.PI / 3
-
-  /** 클릭된 지점의 정보를 얻는 raycaster */
-  const raycaster = new THREE.Raycaster();
-  const pointer = new THREE.Vector2();
-
-
-
-
-  const clock = new THREE.Clock()
-
-  render() //랜더 되는 부분
-  function render() {
-    const delta = clock.getDelta()
-    mixer.update(delta)
-    controls.update()
-    renderer.render(scene,camera)
-
-    requestAnimationFrame(render);
-  }
-
-  function handleResize(){ //애니메이션 작동
-    camera.aspect = window.innerWidth / window.innerHeight;
-
-    camera.updateProjectionMatrix();
-
-    renderer.setSize(window.innerWidth,window.innerHeight)
-
-    renderer.render(scene, camera)
-
-  }
-
-  window.addEventListener('resize',handleResize)
-
-
-
-  function handlePointerDown(e) {
-    pointer.x = (e.clientX / window.innerWidth - 0.5) * 2,
-    pointer.y =  -(e.clientY / window.innerHeight - 0.5) * 2
-    raycaster.setFromCamera(pointer, camera);
-    
-    const intersects = raycaster.intersectObjects(scene.children)
-
-    const object= intersects[0]?.object;
-
-    if (object?.name  === 'Ch46'){
-      const previousAction = currentAction;
-
-      const index = Math.round(Math.random() * (dancingAniumations.length -1))
-
-      currentAction = mixer.clipAction(dancingAniumations[index])
-
-      currentAction.loop = THREE.LoopOnce  // THREE.LoopRepeat
-      
-      currentAction.clampWhenFinished = true;
-
-      if(previousAction !== currentAction){
-        previousAction.fadeOut(0.5)
-        currentAction.reset().fadeIn(0.5).play()
-      }
-
-      mixer.addEventListener('finished', handleFinished);
-      
-      function handleFinished(){
-        const previousAction = currentAction;
-        
-        currentAction = mixer.clipAction(combatAniumations[0]);
-
-        previousAction.fadeOut(0.5)
-        currentAction.reset().fadeIn(0.5).play()
-      }
-    }  
-
-  }
-
-  window.addEventListener('pointerdown',handlePointerDown)
+    if(Math.random() > 0.95 || flash.power > 100){
+      if(flash.power > 100)
+      flash.position.set(Math.random() *400, 300, Math.random() * 200, 100)
+      flash.power = 50 + Math.random() * 500;
+    }
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate)
 }
 
+function onWindowResize(){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+
+  renderer.setSize(window.innerWidth, window.innerHeight)
+}
