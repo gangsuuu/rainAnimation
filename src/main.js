@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 
 let scene,
 camera,
@@ -23,6 +24,7 @@ function init() {
   camera.rotation.y = -0.12;
   camera.rotation.z = 0.27;
 
+
   const ambient =new THREE.AmbientLight(0x555555);
   scene.add(ambient);
 
@@ -41,6 +43,38 @@ function init() {
 
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
+  
+
+  let group = new THREE.Group()
+  const gltfLoader = new GLTFLoader();
+  // gltfLoader.load('./thors_hammer/scene.gltf')
+    gltfLoader.load(
+      './thors_hammer/scene.gltf',
+      (gltf) => {
+
+        for(const child of gltf.scene.children)
+        {
+          child.scale.set(0.035, 0.035, 0.035)
+          child.position.set(1.28, 3, -1.45)
+          child.rotation.set(-0.34, -0.56, 2.02)
+
+          scene.add(child)
+          animate();
+        }
+      },
+      (progress) =>
+      {
+          
+      },
+      (error) =>
+      {
+          console.log(error)
+      }
+    )
+
+  
+
+
 
   let positions = [];
   let sizes = [];
@@ -102,7 +136,7 @@ function init() {
         cloudParticles.push(cloud);
         scene.add(cloud);
       }
-      animate();
+     
       window.addEventListener("resize",onWindowResize);
       
     }
@@ -110,11 +144,15 @@ function init() {
 }
 init();
 
+
+
+
+
+
 function animate(){
     cloudParticles.forEach((p) => {
       p.rotation.z -= 0.002;
     })
-
     // const time = Date.new() * 0.05;
     rainGeo.verticesNeedUpdate = true;
     rain.position.z -= 0.222;
