@@ -1,0 +1,11 @@
+Model Information:
+* title:	Thor's Hammer
+* source:	https://sketchfab.com/3d-models/thors-hammer-154226d86f0d43998cf4f46ab486ac0c
+* author:	3dprefabs (https://sketchfab.com/3dprefabs)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Thor's Hammer" (https://sketchfab.com/3d-models/thors-hammer-154226d86f0d43998cf4f46ab486ac0c) by 3dprefabs (https://sketchfab.com/3dprefabs) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
